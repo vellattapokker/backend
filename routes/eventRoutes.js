@@ -167,7 +167,55 @@ router.get('/:id/stats', requireAuth, async (req, res) => {
     }
 });
 
-// Get single event (Moved below specific routes)
+// Get attendees for an event (For Organizer)
+router.get('/:id/attendees', requireAuth, async (req, res) => {
+    const eventId = req.params.id.replace(/[^a-zA-Z0-9-]/g, '');
+    if (!eventId || eventId === 'null' || eventId === 'undefined') return res.status(400).json({ error: 'Invalid event ID format' });
+
+    try {
+        // 1. Check Ownership
+        const { data: event, error: eventError } = await supabase
+            .from('events')
+            .select('organizer_id')
+            .eq('id', eventId)
+            .single();
+
+        if (eventError || !event) return res.status(404).json({ error: 'Event not found' });
+        if (event.organizer_id !== req.user.id) return res.status(403).json({ error: 'Unauthorized' });
+
+        // 2. Fetch Bookings and User Info
+        // Supabase allows joining tables if they have a foreign key relationship.
+        // We'll join bookings with users to get the attendee email and role.
+        const { data: attendees, error: bookError } = await supabase
+            .from('bookings')
+            .select(`
+                id,
+                booking_id,
+                amount,
+                status,
+                is_checked_in,
+                checked_in_at,
+                is_food_redeemed,
+                food_redeemed_at,
+                created_at,
+                user_id,
+                users (
+                    email,
+                    role
+                )
+            `)
+            .eq('event_id', eventId)
+            .order('created_at', { ascending: false });
+
+        if (bookError) throw bookError;
+
+        res.json(attendees);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get single event
 router.get('/:id', async (req, res) => {
     try {
         const eventId = req.params.id.replace(/[^a-zA-Z0-9-]/g, '');
