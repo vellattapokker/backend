@@ -1,0 +1,34 @@
+{
+  "events": [
+    {
+      "id": "a44dc916-cc6e-44b2-85bd-f90176de7d6b",
+      "title": "test",
+      "ticket_price": 20,
+      "payout_status": "pending"
+    },
+    {
+      "id": "1c0ea12b-d892-4060-b465-35b06b5242c3",
+      "title": "new",
+      "ticket_price": 5,
+      "payout_status": "settled"
+    }
+  ],
+  "bookings": [
+    {
+      "event_id": "1c0ea12b-d892-4060-b465-35b06b5242c3",
+      "amount": 3500
+    },
+    {
+      "event_id": "1c0ea12b-d892-4060-b465-35b06b5242c3",
+      "amount": 3500
+    },
+    {
+      "event_id": "1c0ea12b-d892-4060-b465-35b06b5242c3",
+      "amount": 3500
+    },
+    {
+      "event_id": "1c0ea12b-d892-4060-b465-35b06b5242c3",
+      "amount": 3500
+    }
+  ]
+}
