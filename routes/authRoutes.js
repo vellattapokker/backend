@@ -56,4 +56,21 @@ router.get('/me', requireAuth, async (req, res) => {
     res.json({ user: req.user, profile: userData });
 });
 
+router.post('/update-profile', requireAuth, async (req, res) => {
+    const { upi_id } = req.body;
+    try {
+        const { data, error } = await supabase
+            .from('users')
+            .update({ upi_id })
+            .eq('id', req.user.id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        res.json({ message: 'Profile updated', profile: data });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
 module.exports = router;

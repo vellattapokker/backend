@@ -184,8 +184,6 @@ router.get('/:id/attendees', requireAuth, async (req, res) => {
         if (event.organizer_id !== req.user.id) return res.status(403).json({ error: 'Unauthorized' });
 
         // 2. Fetch Bookings and User Info
-        // Supabase allows joining tables if they have a foreign key relationship.
-        // We'll join bookings with users to get the attendee email and role.
         const { data: attendees, error: bookError } = await supabase
             .from('bookings')
             .select(`
@@ -201,7 +199,8 @@ router.get('/:id/attendees', requireAuth, async (req, res) => {
                 user_id,
                 users (
                     email,
-                    role
+                    role,
+                    upi_id
                 )
             `)
             .eq('event_id', eventId)
@@ -210,6 +209,48 @@ router.get('/:id/attendees', requireAuth, async (req, res) => {
         if (bookError) throw bookError;
 
         res.json(attendees);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Cancel an event (For Organizer)
+router.put('/:id/cancel', requireAuth, async (req, res) => {
+    const eventId = req.params.id.replace(/[^a-zA-Z0-9-]/g, '');
+    if (!eventId || eventId === 'null' || eventId === 'undefined') return res.status(400).json({ error: 'Invalid event ID format' });
+
+    try {
+        // 1. Check Ownership
+        const { data: event, error: eventError } = await supabase
+            .from('events')
+            .select('organizer_id, title, is_cancelled')
+            .eq('id', eventId)
+            .single();
+
+        if (eventError || !event) return res.status(404).json({ error: 'Event not found' });
+        if (event.organizer_id !== req.user.id) return res.status(403).json({ error: 'Unauthorized to cancel this event' });
+        if (event.is_cancelled) return res.status(400).json({ error: 'Event is already cancelled' });
+
+        // 2. Perform Cancellation (Set event.is_cancelled = true)
+        const { error: updEventError } = await supabase
+            .from('events')
+            .update({ is_cancelled: true })
+            .eq('id', eventId);
+
+        if (updEventError) throw updEventError;
+
+        // 3. Update all bookings for this event
+        const { error: updBookingsError } = await supabase
+            .from('bookings')
+            .update({ 
+                status: 'cancelled', 
+                refund_status: 'pending' 
+            })
+            .eq('event_id', eventId);
+
+        if (updBookingsError) throw updBookingsError;
+
+        res.json({ message: 'Event successfully cancelled and all bookings marked for refund.' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

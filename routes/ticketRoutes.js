@@ -92,7 +92,8 @@ router.get('/my-bookings', requireAuth, async (req, res) => {
                     lat,
                     lng,
                     images,
-                    ticket_price
+                    ticket_price,
+                    is_cancelled
                 )
             `)
             .eq('user_id', req.user.id)
