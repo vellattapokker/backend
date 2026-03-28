@@ -9,7 +9,8 @@ router.get('/', async (req, res) => {
         const { data, error } = await supabase
             .from('events')
             .select('*, programs(*), reviews(*)')
-            .eq('is_public', true);
+            .eq('is_public', true)
+            .eq('is_cancelled', false);
             
         if (error) throw error;
         res.json(data);
@@ -251,6 +252,42 @@ router.put('/:id/cancel', requireAuth, async (req, res) => {
         if (updBookingsError) throw updBookingsError;
 
         res.json({ message: 'Event successfully cancelled and all bookings marked for refund.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Mark a booking as refunded (For Organizer)
+router.post('/:id/bookings/:bookingId/refund', requireAuth, async (req, res) => {
+    const eventId = req.params.id.replace(/[^a-zA-Z0-9-]/g, '');
+    const bookingId = req.params.bookingId;
+    const { tx_id } = req.body;
+
+    try {
+        // 1. Check Event Ownership
+        const { data: event, error: eventError } = await supabase
+            .from('events')
+            .select('organizer_id')
+            .eq('id', eventId)
+            .single();
+
+        if (eventError || !event) return res.status(404).json({ error: 'Event not found' });
+        if (event.organizer_id !== req.user.id) return res.status(403).json({ error: 'Unauthorized' });
+
+        // 2. Update Booking Refund Status
+        const { data, error: updError } = await supabase
+            .from('bookings')
+            .update({ 
+                refund_status: 'completed',
+                refund_tx_id: tx_id,
+                status: 'refunded'
+            })
+            .eq('id', bookingId)
+            .eq('event_id', eventId)
+            .select();
+
+        if (updError) throw updError;
+        res.json({ message: 'Refund marked as completed', data: data[0] });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
