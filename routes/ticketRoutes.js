@@ -12,6 +12,7 @@ const razorpay = new Razorpay({
 // RSVP to a free event
 router.post('/rsvp', requireAuth, async (req, res) => {
     const { event_id } = req.body;
+    if (!event_id || String(event_id) === 'null' || String(event_id) === 'undefined') return res.status(400).json({ error: 'Invalid event ID' });
     try {
         const { data, error } = await supabase
             .from('rsvps')
@@ -31,6 +32,7 @@ router.post('/rsvp', requireAuth, async (req, res) => {
 // Create Razorpay Order for paid ticket
 router.post('/checkout', requireAuth, async (req, res) => {
     const { event_id, ticket_price } = req.body;
+    if (!event_id || String(event_id) === 'null' || String(event_id) === 'undefined') return res.status(400).json({ error: 'Invalid event ID' });
     try {
         // Assume ticket_price is in INR (float), Razorpay uses minimum currency unit (paise)
         const amountInPaise = Math.round(ticket_price * 100);
@@ -52,6 +54,7 @@ router.post('/checkout', requireAuth, async (req, res) => {
 // 3. Save successful booking after payment
 router.post('/book', requireAuth, async (req, res) => {
     const { event_id, order_id, payment_id, amount } = req.body;
+    if (!event_id || String(event_id) === 'null' || String(event_id) === 'undefined') return res.status(400).json({ error: 'Invalid event ID' });
     try {
         const booking_id = 'LOC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
         
@@ -106,6 +109,7 @@ router.get('/my-bookings', requireAuth, async (req, res) => {
 router.delete('/bookings/:id', requireAuth, async (req, res) => {
     try {
         const { id } = req.params;
+        if (!id || String(id) === 'null' || String(id) === 'undefined') return res.status(400).json({ error: 'Invalid booking ID' });
         
         // 1. Verify ownership before deleting
         const { data: booking, error: fetchError } = await supabase
@@ -133,7 +137,8 @@ router.delete('/bookings/:id', requireAuth, async (req, res) => {
 // Verify Ticket (For Organizer Scan)
 router.post('/verify', requireAuth, async (req, res) => {
     const { code, event_id: raw_event_id, type = 'entry' } = req.body;
-    const event_id = raw_event_id.replace(/[^a-zA-Z0-9-]/g, '');
+    const event_id = raw_event_id ? raw_event_id.replace(/[^a-zA-Z0-9-]/g, '') : '';
+    if (!event_id || event_id === 'null' || event_id === 'undefined') return res.status(400).json({ error: 'Invalid event ID format' });
     console.log(`[VERIFY] Type: "${type}", Scanned Code: "${code}", Sanitzied Event ID: "${event_id}"`);
     try {
         // 1. Verify Event Ownership

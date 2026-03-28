@@ -73,6 +73,7 @@ router.put('/:id', requireAuth, async (req, res) => {
     const { title, description, location, lat, lng, is_public, ticket_price, images, programs, start_date, account_number, ifsc_code } = req.body;
     try {
         const eventId = req.params.id.replace(/[^a-zA-Z0-9-]/g, '');
+        if (!eventId || eventId === 'null' || eventId === 'undefined') return res.status(400).json({ error: 'Invalid event ID format' });
         // 1. Check Ownership
         const { data: existing, error: fetchError } = await supabase
             .from('events')
@@ -119,6 +120,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 // Get event stats (For Organizer)
 router.get('/:id/stats', requireAuth, async (req, res) => {
     const eventId = req.params.id.replace(/[^a-zA-Z0-9-]/g, '');
+    if (!eventId || eventId === 'null' || eventId === 'undefined') return res.status(400).json({ error: 'Invalid event ID format' });
     console.log(`[STATS] Fetching for Event: "${eventId}" by User: ${req.user.id}`);
     try {
         // 1. Check Ownership
@@ -169,6 +171,7 @@ router.get('/:id/stats', requireAuth, async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const eventId = req.params.id.replace(/[^a-zA-Z0-9-]/g, '');
+        if (!eventId || eventId === 'null' || eventId === 'undefined') return res.status(400).json({ error: 'Invalid event ID format' });
         const { data, error } = await supabase
             .from('events')
             .select('*, programs(*), reviews(*)')
