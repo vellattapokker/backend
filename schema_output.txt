@@ -1,0 +1,72 @@
+Bookings table exists: true
+Columns:
+[
+  {
+    "column_name": "id",
+    "data_type": "uuid"
+  },
+  {
+    "column_name": "user_id",
+    "data_type": "uuid"
+  },
+  {
+    "column_name": "event_id",
+    "data_type": "uuid"
+  },
+  {
+    "column_name": "order_id",
+    "data_type": "text"
+  },
+  {
+    "column_name": "payment_id",
+    "data_type": "text"
+  },
+  {
+    "column_name": "amount",
+    "data_type": "integer"
+  },
+  {
+    "column_name": "status",
+    "data_type": "text"
+  },
+  {
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "column_name": "booking_id",
+    "data_type": "text"
+  },
+  {
+    "column_name": "is_checked_in",
+    "data_type": "boolean"
+  },
+  {
+    "column_name": "checked_in_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "column_name": "is_food_redeemed",
+    "data_type": "boolean"
+  },
+  {
+    "column_name": "food_redeemed_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "column_name": "refund_status",
+    "data_type": "text"
+  },
+  {
+    "column_name": "refund_tx_id",
+    "data_type": "text"
+  }
+]
+Foreign Keys:
+[
+  {
+    "column_name": "event_id",
+    "foreign_table": "events",
+    "foreign_column": "id"
+  }
+]
