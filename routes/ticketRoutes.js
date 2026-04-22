@@ -53,8 +53,9 @@ router.post('/checkout', requireAuth, async (req, res) => {
 
 // 3. Save successful booking after payment
 router.post('/book', requireAuth, async (req, res) => {
-    const { event_id, order_id, payment_id, amount } = req.body;
+    const { event_id, order_id, payment_id, amount, quantity = 1 } = req.body;
     if (!event_id || String(event_id) === 'null' || String(event_id) === 'undefined') return res.status(400).json({ error: 'Invalid event ID' });
+    
     try {
         const booking_id = 'LOC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
         
@@ -67,6 +68,7 @@ router.post('/book', requireAuth, async (req, res) => {
                 payment_id,
                 amount,
                 booking_id,
+                quantity: Math.min(Math.max(1, parseInt(quantity)), 10),
                 status: 'confirmed'
             }])
             .select();
@@ -165,36 +167,48 @@ router.post('/verify', requireAuth, async (req, res) => {
         
         // 3. Logic based on Type
         if (type === 'food') {
-            if (!booking.is_checked_in) {
-                return res.status(400).json({ error: 'PLEASE ENTER FIRST!', user: 'Attendee' });
-            }
-            if (booking.is_food_redeemed) {
-                return res.status(400).json({ error: 'ALREADY REDEEMED', user: 'Attendee' });
+            const currentCount = booking.food_redeemed_count || 0;
+            const maxCount = booking.quantity || 1;
+
+            if (currentCount >= maxCount) {
+                return res.status(400).json({ error: 'ALREADY ALL REDEEMED', user: 'Attendee' });
             }
 
             // Update Food Status
             const { error: updE } = await supabase.from('bookings').update({ 
-                is_food_redeemed: true, 
+                food_redeemed_count: currentCount + 1, 
                 food_redeemed_at: new Date().toISOString() 
             }).eq('id', booking.id);
             
-            if (updE) return res.status(500).json({ error: 'Field is_food_redeemed missing in DB. Please add it first.' });
+            if (updE) throw updE;
 
-            return res.json({ message: 'FOOD SUCCESSFUL', user: 'Attendee', booking_id: booking.booking_id });
+            return res.json({ 
+                message: `FOOD GRANTED (${currentCount + 1}/${maxCount})`, 
+                user: 'Attendee', 
+                booking_id: booking.booking_id 
+            });
         } else {
             // Main Entry Logic
-            if (booking.is_checked_in) {
-                return res.status(400).json({ error: 'ALREADY ENTERED', user: 'Attendee' });
+            const currentCount = booking.checked_in_count || 0;
+            const maxCount = booking.quantity || 1;
+
+            if (currentCount >= maxCount) {
+                return res.status(400).json({ error: 'ALREADY ALL ENTERED', user: 'Attendee' });
             }
 
             const { error: updateError } = await supabase.from('bookings').update({ 
-                is_checked_in: true, 
+                checked_in_count: currentCount + 1,
+                is_checked_in: true, // Keep this for legacy compatibility
                 checked_in_at: new Date().toISOString() 
             }).eq('id', booking.id);
 
             if (updateError) throw updateError;
 
-            return res.json({ message: 'ENTRY GRANTED', user: 'Attendee', booking_id: booking.booking_id });
+            return res.json({ 
+                message: `ENTRY GRANTED (${currentCount + 1}/${maxCount})`, 
+                user: 'Attendee', 
+                booking_id: booking.booking_id 
+            });
         }
     } catch (err) {
         res.status(500).json({ error: err.message });

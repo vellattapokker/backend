@@ -15,6 +15,11 @@ ALTER TABLE public.events ADD COLUMN IF NOT EXISTS is_cancelled BOOLEAN DEFAULT 
 ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS refund_status TEXT DEFAULT 'none';
 ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS refund_tx_id TEXT;
 
+-- 4. Add multi-scan columns to bookings table
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1;
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS checked_in_count INTEGER DEFAULT 0;
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS food_redeemed_count INTEGER DEFAULT 0;
+
 NOTIFY pgrst, 'reload schema';
 `;
 
